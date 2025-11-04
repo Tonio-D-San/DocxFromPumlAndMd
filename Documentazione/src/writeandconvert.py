@@ -152,4 +152,4 @@ def write_and_convert():
     return out_md, out_docx
 
 def __init__():
-    write_and_convert(input_file=None)
+    write_and_convert()
