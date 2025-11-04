@@ -1,0 +1,30 @@
+@startuml
+title Flusso Project API - PATCH /v1/projects/{projectId}/tasks/bulk
+
+actor Client as C
+participant "ProjectTask BS (borepurposingmgmt)" as API_BS
+participant "ProjectTask MS (meRepurposingReg)" as API_MS
+database "Database" as DB
+
+C -> API_BS : PATCH /v1/projects/{projectId}/tasks/bulk\nBody: WrapperTaskUpdateBulkDTORequest {operation, filters, fields}
+activate API_BS
+
+
+
+note right of API_BS
+HTTP_METHOD = PATCH
+CONTENT_TYPE = application/json
+end note
+
+API_BS -> API_MS : PATCH {meRepurposingRegEndPoint}/v1/tasks/bulk \nBody: WrapperTaskUpdateBulkDTORequest {operation, filters, fields}
+activate API_MS
+
+API_MS -> DB : Aggiornamento massivo dei Task associati al projectId
+DB --> API_MS : Esito aggiornamento / errore
+API_MS -->API_BS : - HTTP 204 NO CONTENT \n- Error Response 400 / 404 / 409 / 500
+deactivate API_MS
+
+API_BS --> C : - 204 NO CONTENT \n- 400 / 404 / 409 / 500 Error Response
+deactivate API_BS
+
+@enduml

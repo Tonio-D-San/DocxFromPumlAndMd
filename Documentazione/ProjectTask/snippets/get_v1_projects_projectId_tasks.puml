@@ -1,0 +1,29 @@
+@startuml
+title Flusso Project/Task API - GET /v1/projects/{projectId}/tasks
+
+actor Client as C
+participant "ProjectTask BS (borepurposingmgmt)" as API_BS
+participant "ProjectTask MS (meRepurposingReg)" as API_MS
+database "Database" as DB
+
+C -> API_BS : GET /v1/projects/{projectId}/tasks
+activate API_BS
+
+
+note right of API_BS
+HTTP_METHOD = GET
+CONTENT_TYPE = application/json
+end note
+
+API_BS -> API_MS : GET {meRepurposingRegEndPoint}/v1/projects/{projectId}/tasks
+activate API_MS
+
+API_MS -> DB : Query di ricerca dei Tasks associati al projectId con i filtri indicati
+DB --> API_MS : Tasks trovati / errore
+API_MS --> API_BS : - JSON Response 200 OK : WrapperTaskDTOResponse { items[] } \n- Error Response 400 / 404 / 500
+deactivate API_MS
+
+API_BS --> C : - 200 OK (JSON Response) \n- 400 / 404 / 500 Error Response
+deactivate API_BS
+
+@enduml
