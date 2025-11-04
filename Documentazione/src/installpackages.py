@@ -19,8 +19,10 @@ def ask_yes_no(prompt):
             print("Per favore rispondi Y (sì) o N (no).")
 
 def install_missing_packages():
+    from pathlib import Path
+    import urllib.request
     yes_no = True
-    for package in ["pypandoc", "plantuml"]:
+    for package in ["pypandoc", "plantuml", "six"]:
         try:
             importlib.import_module(package)
         except ImportError:
@@ -59,6 +61,26 @@ def install_missing_packages():
                 print("⚠️ Impossibile installare librsvg via conda. Installalo manualmente.")
         else:
             print("⚠️ librsvg non installato. Installare manualmente tramite 'conda install librsvg'")
+
+    jar_dir = Path(__file__).parent / "lib"
+    jar_dir.mkdir(exist_ok=True)
+    jar_path = jar_dir / "plantuml.jar"
+
+    if not jar_path.exists():
+        print(f"🔍 plantuml.jar non trovato in {jar_path}")
+        if ask_yes_no("Vuoi scaricare automaticamente l’ultima versione di PlantUML?"):
+            try:
+                url = "https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar"
+                print(f"⬇️ Download in corso da {url}...")
+                urllib.request.urlretrieve(url, jar_path)
+                print(f"✅ plantuml.jar scaricato correttamente in {jar_path}\n")
+            except Exception as e:
+                print(f"❌ Errore durante il download: {e}")
+                print("⚠️ Scaricalo manualmente da: https://plantuml.com/download")
+        else:
+            print("⚠️ plantuml.jar non scaricato.")
+    else:
+        print(f"✅ plantuml.jar già presente in {jar_path}")
     return yes_no
 
 def __init__():
