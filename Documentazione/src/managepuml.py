@@ -1,4 +1,7 @@
-import os
+import subprocess, os
+
+# def snake_to_pascal(snake_str: str) -> str:
+#     return ''.join(word.capitalize() for word in snake_str.split('_'))
 
 def paths_from_input():
     import argparse
@@ -14,6 +17,8 @@ def paths_from_input():
     base_name = os.path.splitext(os.path.basename(input_file))[0]
     title_case = base_name.capitalize()
 
+    # title_case = snake_to_pascal(base_name)
+
     default_input = os.path.join("", title_case, base_name + os.path.splitext(input_file)[1])
     if not os.path.exists(default_input):
         raise FileNotFoundError(f"File non trovato: {default_input}")
@@ -25,9 +30,6 @@ def paths_from_input():
         os.path.join("", title_case, "snippets"),
         os.path.join("", title_case, f"{base_name}_output")
     )
-
-
-
 
 def puml_to_svg():
     input_path, base_name, image_dir, code_dir, output_dir = paths_from_input()
@@ -73,7 +75,7 @@ def process_puml(puml_path, svg_path, max_retries=5, retry_delay=2):
 
         except PlantUMLHTTPError as e:
             print(f"⚠️ Errore PlantUMLHTTPError ({type(e).__name__}) con {os.path.basename(puml_path)} "
-                  f"al tentativo {attempt}/{max_retries}: {e}")
+                  f"al tentativo {attempt}/{max_retries}: {str(e)}")
             if attempt < max_retries:
                 time.sleep(retry_delay)
                 print("↻ Riprovo...")
