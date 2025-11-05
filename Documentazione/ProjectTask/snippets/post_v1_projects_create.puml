@@ -2,8 +2,8 @@
 title Flusso Project API - POST /v1/projects
 
 actor Client as C
-participant "Project BS (borepurposingmgmt)" as BS
-participant "Project MS (meRepurposingReg)" as MS
+participant "ProjectTask BS (borepurposingmgmt)" as BS
+participant "ProjectTask MS (meRepurposingReg)" as MS
 participant "DocumentNode MS (meEcDocument)" as DMS
 database "Database" as DB
 

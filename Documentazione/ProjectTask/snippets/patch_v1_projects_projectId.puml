@@ -2,8 +2,8 @@
 title Flusso Project API - PATCH /v1/projects/{projectId}
 
 actor Client as C
-participant "Project BS (borepurposingmgmt)" as BS
-participant "Project MS (meRepurposingReg)" as MS
+participant "ProjectTask BS (borepurposingmgmt)" as BS
+participant "ProjectTask MS (meRepurposingReg)" as MS
 participant "DocumentNode MS (meEcDocument)" as DMS
 database "Database" as DB
 
@@ -14,7 +14,7 @@ activate BS
 note right of BS
 Il JSON ProjectUpdateDTORequest viene utilizzato
 per aggiornare il singolo progetto
-tramite un proxy PATCH verso Project MS.
+tramite un proxy PATCH verso ProjectTask MS.
 end note
 
 note right of BS

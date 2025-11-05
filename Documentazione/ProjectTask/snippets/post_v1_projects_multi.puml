@@ -2,8 +2,8 @@
 title Flusso Project API - PATCH /v1/projects/multi
 
 actor Client as C
-participant "Project BS (borepurposingmgmt)" as BS
-participant "Project MS (meRepurposingReg)" as MS
+participant "ProjectTask BS (borepurposingmgmt)" as BS
+participant "ProjectTask MS (meRepurposingReg)" as MS
 database "Database" as DB
 
 C -> BS : PATCH /v1/projects/multi\nBody: WrapperProjectUpdateDTORequest {stats, items[] }
@@ -14,7 +14,7 @@ HTTP_METHOD = PATCH
 CONTENT_TYPE = application/json
 end note
 
-BS -> MS : PATCH {meRepurposingRegEndPoint}/v1/projects/multi \nRequest: WrapperProjectUpdateDTORequest { items[{ id, name, description, nodeId, ... }] }
+BS -> MS : PATCH {meRepurposingRegEndPoint}/v1/projects/multi \nRequest: WrapperProjectUpdateDTORequest { items[] }
 activate MS
 
 MS -> DB : Aggiorna i record Project indicati (batch update)

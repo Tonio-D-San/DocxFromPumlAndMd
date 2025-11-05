@@ -19,7 +19,7 @@ activate MS
 
 MS -> DB : Query di ricerca Plant con filtri  
 DB --> MS : Risultato ricerca
-MS --> BS : - JSON Response 200 OK: WrapperPlantDTOResponse {stats, items[]}\n- Error Response 500
+MS --> BS : - JSON Response 200 OK: WrapperPlantDTOResponse {stats, items[] }\n- Error Response 500
 deactivate MS
 
 BS --> C : - 200 OK (JSON Response)\n- 500 Error response

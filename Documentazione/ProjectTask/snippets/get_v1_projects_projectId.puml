@@ -2,8 +2,8 @@
 title Flusso Project API - GET /v1/projects/{projectId}
 
 actor Client as C
-participant "Project BS (borepurposingmgmt)" as API_BS
-participant "Project MS (meRepurposingReg)" as API_MS
+participant "ProjectTask BS (borepurposingmgmt)" as API_BS
+participant "ProjectTask MS (meRepurposingReg)" as API_MS
 database "Database" as DB
 
 C -> API_BS : GET /v1/projects/{projectId}
