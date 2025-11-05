@@ -1,0 +1,28 @@
+@startuml
+title Flusso Project API - PATCH /v1/projects/multi
+
+actor Client as C
+participant "Project BS (borepurposingmgmt)" as BS
+participant "Project MS (meRepurposingReg)" as MS
+database "Database" as DB
+
+C -> BS : PATCH /v1/projects/multi\nBody: WrapperProjectUpdateDTORequest {stats, items[] }
+activate BS
+
+note right of BS
+HTTP_METHOD = PATCH
+CONTENT_TYPE = application/json
+end note
+
+BS -> MS : PATCH {meRepurposingRegEndPoint}/v1/projects/multi \nRequest: WrapperProjectUpdateDTORequest { items[{ id, name, description, nodeId, ... }] }
+activate MS
+
+MS -> DB : Aggiorna i record Project indicati (batch update)
+DB --> MS : Esito aggiornamento (OK / errore)
+MS --> BS : - 204 NO CONTENT \n- Error Response 400 / 404 / 409 / 500
+deactivate MS
+
+BS --> C : - 204 NO CONTENT \n- 400 / 404 / 409 / 500 Error Response
+deactivate BS
+
+@enduml
