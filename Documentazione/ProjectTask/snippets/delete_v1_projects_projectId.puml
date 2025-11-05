@@ -11,29 +11,32 @@ database "Database" as DB
 C -> BS : DELETE /v1/projects/{projectId}
 activate BS
 
-note right of BS
-HTTP_METHOD = DELETE
-CONTENT_TYPE = application/json
-end note
-
 BS -> BS : Invoca route interna DELETE_PROJECT
 activate BS
 
 == Recupero dettagli progetto tramite projectId ==
 BS -> BS : Invoca route interna SEARCH_PROJECT_BY_ID
+note right of BS
+HTTP_METHOD = GET
+CONTENT_TYPE = application/json
+end note
 BS -> MS : GET {meRepurposingRegEndPoint}/v1/projects/{id}
 activate MS
-MS -> DB : Query per ID progetto
-DB --> MS : ProjectDetailDTOResponse {id, nodeId, name, plant ...}
-MS --> BS : JSON response 200 OK: ProjectDetailDTOResponse \n- Error Response 400 / 404 / 500
+MS -> DB : Query ricerca Project per ID
+DB --> MS : Esito ricerca / errore
+MS --> BS : - JSON response 200 OK: ProjectDetailDTOResponse {id, nodeId, name, plant ..} \n- Error Response 400 / 404 / 500
 deactivate MS
 
 == Flusso di eliminazione principale ==
 BS -> BS : Invoca route interna DELETE_PROJECT_BY_ID
+note right of BS
+HTTP_METHOD = DELETE
+CONTENT_TYPE = application/json
+end note
 BS -> MS : DELETE {meRepurposingRegEndPoint}/v1/projects/{projectId}
 
 activate MS
-MS -> DB : Query di eliminazione Project
+MS -> DB : Query eliminazione Project per ID
 DB --> MS : Esito eliminazione OK / errore
 MS --> BS : - 204 NO CONTENT \n- 400 / 404 / 409 / 500 Error Response
 deactivate MS
@@ -46,7 +49,7 @@ end note
 BS -> DMS : DELETE_NODE
 activate DMS
 DMS -> DMS : {mceEcDocumentEndPoint}/v1/nodes/{id}
-DMS -> BS : Query di eliminazione Document Node
+DMS -> BS : Esito di eliminazione Document Node
 deactivate DMS
 BS -> C : - 204 NO CONTENT \n- 400 / 404 / 409 / 500 Error Response
 deactivate BS

@@ -2,28 +2,34 @@
 
 ## **Architettura generale**
 
-L’architettura del sistema prevede chiamate tra diversi microservizi, secondo il seguente schema:
+L’architettura del sistema prevede chiamate tra i microservizi **ProjectTask BS (borepurposingmgmt)** e **ProjectTask MS (meRepurposingReg)**, secondo il seguente schema:
 
 ```
 Client
-↓ (REST API – chiamata al BS)
-ProjectTaskAPI (borepurposingmgmt)
-↓ (chiamata interna BS)
-ProjectTaskService (borepurposingmgmt)
-↓ (chiamata al MS)
-ProjectTaskControllerReadWrite (meRepurposingReg)
+↓ 
+ProjectTask BS (borepurposingmgmt)
+|   ↓
+|   DocumentNode MS (meEcDocument)
+↓ 
+ProjectTask MS (meRepurposingReg)
 ↓
 Database
 ```
 
 ---
 
-Il modulo **ProjectTask API** espone quattro endpoint REST che permettono di:
+Il modulo **ProjectTask BS** espone dieci endpoint REST che permettono di:
 
-1. Recuperare la lista di **Tasks** tramite l' identificativo univoco del Project a cui sono associati.
-2. Creare un nuovo **Task** associato ad un progetto specifico.
-3. Aggiornare in modalità massiva gli stessi campi dei **Tasks**, associati ad un Project.
-4. Aggiornare in modalità multipla campi diversi dei **Tasks** indicati, associati ad un Project.
+1. Recuperare i dettagli di un **Project** specifico tramite il suo identificativo univoco `projectId`.
+2. Recuperare una lista di **Project** in base ai parametri di ricerca forniti.
+3. Creare un nuovo **Project**.
+4. Aggiornare le informazioni di un **Project** tramite il suo identificativo univoco `projectId`.
+5. Aggiornare in modalità multipla più **Project**. 
+6. Eliminare un **Project** specifico tramite il suo identificativo univoco `projectId`. 
+7. Recuperare la lista di **Tasks** tramite l' identificativo univoco del progetto a cui sono associati e filtri di ricerca. 
+8. Creare un nuovo **Task** associato ad un progetto specifico. 
+9. Aggiornare in modalità massiva gli stessi campi dei **Tasks**, associati ad un progetto. 
+10. Aggiornare in modalità multipla campi diversi dei **Tasks** indicati, associati ad un progetto.
 
 ---
 
@@ -148,5 +154,121 @@ Consente di aggiornare più **Project** in un’unica operazione (*batch update*
 * **404 Not Found** → Uno o più progetti non trovati.
 * **409 Conflict** → Conflitto durante l’aggiornamento di uno o più record.
 * **500 Internal Server Error** → Errore durante l’elaborazione o nella comunicazione tra microservizi.
+
+---
+
+## **DELETE /v1/projects/{projectId}**
+
+### **Descrizione**
+
+Consente di eliminare un **Project** specifico tramite il suo identificativo univoco `projectId`.
+
+### **Flusso operativo**
+
+1. Il **Client** effettua una richiesta `DELETE /v1/projects/{projectId}` al microservizio **BS (borepurposingmgmt)**.
+2. Il **ProjectTask BS** effettua la chiamata al microservizio **MS (meRepurposingReg)** che ricerca il progetto e lo restituisce al **BS**.
+3. Il **BS** inoltra la chiamata al microservizio **MS (meRepurposingReg)** che elimina il record dal **Database**.
+4. Al termine, il **BS** avvia un flusso asincrono per la gestione del nodo documento associato al progetto, tramite il microservizio **DocumentNode MS (meEcDocument)**.
+5. L’esito dell’operazione viene restituito dal **MS** al **BS**, che inoltra la risposta al **Client**.
+
+### **Risposte possibili**
+
+* **204 No Content** → Eliminazione completata correttamente.
+* **400 Bad Request** → Formato del body o dati non validi.
+* **404 Not Found** → Progetto non trovato.
+* **409 Conflict** → Conflitto durante l’eliminazione di uno o più record.
+* **500 Internal Server Error** → Errore durante l’elaborazione o nella comunicazione tra microservizi.
+
+## **GET /v1/projects/{projectId}/tasks**
+
+### **Descrizione**
+
+L’endpoint consente di recuperare la lista dei **Task** associati ad un progetto specifico tramite l'identificativo univoco **projectId**, applicando dei filtri di ricerca.
+
+### **Flusso operativo**
+
+1. Il **Client** effettua una richiesta `GET /v1/projects/{projectId}/tasks` verso il microservizio **ProjectTask BS (borepurposingmgmt)** applicando i filtri di ricerca: startDate, endDate, docRequired, deactivated.
+2. **ProjectTask BS** riceve la richiesta e la inoltra al **ProjectTask MS** per l’elaborazione: {meRepurposingRegEndPoint}/v1/projects/{projectId}/tasks?startDate=&endDate=&docRequired=&deactivated=
+3. Il microservizio **ProjectTask MS** elabora la richiesta e interroga il **Database** per recuperare i Task associati al progetto secondo i filtri impostati.
+4. **ProjectTask MS** restituisce a **ProjectTask BS** il risultato della ricerca corrispondente, in caso di successo, ad un JSON response conforme al modello `WrapperTaskDTOResponse{items[]}` che incapsula le risorse trovate.
+4. Le risorse trovate vengono restituite al Client.
+
+### **Risposte possibili**
+
+* **200 OK** → Risorsa trovata; i dettagli sono restituiti in formato JSON.
+* **400 Bad Request** → Parametri non validi o richiesta errata.
+* **404 Not Found** → Nessuna risorsa trovata associata all’identificativo indicato.
+* **500 Internal Server Error** → Errore durante l’elaborazione o nella comunicazione con il servizio remoto.
+
+---
+## **POST /v1/projects/{projectId}/tasks**
+
+### **Descrizione**
+
+Consente di creare un nuovo **Task** associato ad un progetto specifico tramite l'identificativo univoco **projectId**.
+
+### **Flusso operativo**
+
+1. Il Client effettua una richiesta: `POST /v1/projects/{projectId}/tasks` al microservizio **ProjectTask BS (borepurposingmgmt)** indicando il projectId a cui associare il nuovo Task e un body JSON conforme al modello `TaskCreateDTORequest` contenente le informazioni del nuovo Task.
+2. **ProjectTask BS** riceve la richiesta e la inoltra al **ProjectTask MS** per l’elaborazione.
+3. Il microservizio **ProjectTask MS** elabora la richiesta e interroga il **Database** passando il JSON di richiesta e l'identificativo del progetto a cui associare il nuovo Task.
+4. **ProjectTask MS** restituisce a **ProjectTask BS** un JSON conforme al modello `IdentifierDTOResponse {id}` che contiene l'identificativo univoco della risorsa creata.
+5. L’esito dell’operazione e l'identificativo della nuova risorsa `IdentifierDTOResponse` vengono restituite alla **ProjectTask BS**, che restituisce la risposta al Client.
+
+### **Risposte possibili**
+
+* **201 Created** → Risorsa creata correttamente; viene restituito l'identificativo della risorsa appena creata.
+* **400 Bad Request** → Parametri non validi o richiesta errata.
+* **404 Not Found** → Nessuna risorsa corrispondente all’identificativo indicato è stata trovata.
+* **500 Internal Server Error** → Errore durante l’elaborazione o nella comunicazione con il servizio remoto.
+
+---
+
+## **PATCH /v1/projects/{projectId}/tasks/bulk**
+
+### **Descrizione**
+
+Consente di applicare lo stesso aggiornamento su campi comuni per tutti i Task indicati, associati ad un progetto specifico tramite l'identificativo univoco projectId.
+
+### **Flusso operativo**
+
+1. Il Client effettua una richiesta: `PATCH /v1/projects/{projectId}/tasks/bulk` con un body JSON conforme al modello `WrapperTaskUpdateBulkDTORequest{operation, filters, fields}`, contenente la tipologia di operazione da eseguire, i riferimenti ai Tasks da aggiornare e i relativi campi da aggiornare con i corrispondenti valori.
+2. **ProjectTask BS** riceve la richiesta e la inoltra al **ProjectTask MS** per l’elaborazione.
+3. Il microservizio **ProjectTask MS** elabora la richiesta e interroga il **Database** passando i parametri e i valori per l' aggiornamento massivo.
+4. **ProjectTask MS** restituisce a **ProjectTask BS** l'esito dell'operazione di aggiornamento.
+5. **ProjectTask BS** riceve e restituisce la risposta al Client.
+
+### **Risposte possibili**
+
+* **204 No Content** → Aggiornamento completato con successo; nessun contenuto restituito.
+* **400 Bad Request** → Parametri o corpo della richiesta non validi.
+* **404 Not Found** → Uno o più task non trovati, o progetto corrispondente all'identificativo indicato inesistente.
+* **409 Conflict** → Conflitto durante l’aggiornamento di uno o più record.
+
+* **500 Internal Server Error** → Errore durante l’elaborazione o la comunicazione con il servizio remoto.
+
+---
+
+## **PATCH /v1/projects/{projectId}/tasks/multi**
+
+### **Descrizione**
+
+Consente di applicare aggiornamenti su campi differenti per i Task indicati, associati ad un progetto specifico tramite l'identificativo univoco projectId.
+
+### **Flusso operativo**
+
+1. Il Client effettua una richiesta: `PATCH /v1/projects/{projectId}/tasks/multi` con un body JSON conforme al modello `WrapperTaskUpdateMultiDTORequest{items[]}`, contenente la lista di Tasks da aggiornare e i relativi campi con i valori corrispondenti.
+2. **ProjectTask BS** riceve la richiesta e la inoltra al **ProjectTask MS** per l’elaborazione.
+3. Il microservizio **ProjectTask MS** elabora la richiesta e interroga il **Database** aggiornando i Task indicati e applicando gli aggiornamenti ai campi specificati.
+4. **ProjectTask MS** restituisce a **ProjectTask BS** l'esito dell'operazione di aggiornamento.
+5. **ProjectTask BS** riceve e restituisce la risposta al Client.
+
+### **Risposte possibili**
+
+* **204 No Content** → Aggiornamento completato con successo; nessun contenuto restituito.
+* **400 Bad Request** → Parametri o corpo della richiesta non validi.
+* **404 Not Found** → Uno o più task non trovati, o progetto corrispondente all'identificativo indicato inesistente.
+* **409 Conflict** → Conflitto durante l’aggiornamento di uno o più record.
+* **500 Internal Server Error** → Errore durante l’elaborazione o la comunicazione con il servizio remoto.
 
 ---
