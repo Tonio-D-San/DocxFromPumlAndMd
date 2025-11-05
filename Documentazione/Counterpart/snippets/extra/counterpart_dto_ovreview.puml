@@ -1,65 +1,95 @@
 @startuml
 title Counterpart DTOs
 
+' ===== Stile =====
 skinparam class {
-    BackgroundColor #F0F8FF
-    BorderColor #1E90FF
+  BackgroundColor #F0F8FF
+  BorderColor #1E90FF
+  FontColor #000000
 }
+skinparam enum {
+  BackgroundColor #FFF8DC
+  BorderColor #DAA520
+}
+skinparam shadowing false
 
-' ==== DTO Classes ====
+' ===== DTO Classes =====
 class CounterpartDTORequest {
-    - name : String
-    - vatNumber : String
-    - country : String
-    - registeredOffice : String
-    - thirdPartyValue : ThirdPartyType
-    - email : String
-    - secCheckPerformed : Boolean
-    - secCheckDate : LocalDate
-    - secCheckDeadline : LocalDate
-    - secCheckOutcome : StoplightType
-    - note : String
+    + name : String
+    + vatNumber : String
+    + country : String
+    + registeredOffice : String
+    + thirdPartyValue : ThirdPartyType
+    + email : String
+    + secCheckPerformed : Boolean
+    + secCheckDate : LocalDate
+    + secCheckDeadline : LocalDate
+    + secCheckOutcome : StoplightType
+    + note : String
 }
 
 class CounterpartSearchDTORequest {
-    - page : Integer
-    - pageSize : Integer
-    - sort : Set<String>
-    - ids : Set<Long>
-    - name : String
-    - vatNumber : String
-    - countries : Set<String>
-    - secCheckPerformed : Boolean
-    - secCheckDeadline : String
-    - secCheckOutcome : StoplightType
-    - projectionType : ProjectionType
+    + page : Integer
+    + pageSize : Integer
+    + sort : Set<String>
+    + ids : Set<Long>
+    + name : String
+    + vatNumber : String
+    + countries : Set<String>
+    + secCheckPerformed : Boolean
+    + secCheckDeadline : LocalDate
+    + secCheckOutcome : StoplightType
+    + projectionType : ProjectionType
 }
 
 class CounterpartUpdateItemDTORequest {
-    - id : Long
-    - nodeId : String
-    - name : String
-    - vatNumber : String
-    - country : String
-    - registeredOffice : String
-    - thirdPartyValue : ThirdPartyType
-    - email : String
-    - secCheckPerformed : Boolean
-    - secCheckDate : LocalDate
-    - secCheckDeadline : LocalDate
-    - secCheckOutcome : StoplightType
-    - note : String
+    + id : Long
+    + nodeId : String
+    + name : String
+    + vatNumber : String
+    + country : String
+    + registeredOffice : String
+    + thirdPartyValue : ThirdPartyType
+    + email : String
+    + secCheckPerformed : Boolean
+    + secCheckDate : LocalDate
+    + secCheckDeadline : LocalDate
+    + secCheckOutcome : StoplightType
+    + note : String
 }
 
 class WrapperCounterpartCreateDTORequest {
-    - items : List<CounterpartDTORequest>
+    + items : List<CounterpartDTORequest>
 }
 
 class WrapperCounterpartUpdateDTORequest {
-    - items : List<CounterpartUpdateItemDTORequest>
+    + items : List<CounterpartUpdateItemDTORequest>
 }
 
-' ==== Enums ====
+class CounterpartDetailDTOResponse {
+    + id : Long
+    + nodeId : String
+    + name : String
+    + vatNumber : String
+    + country : String
+    + registeredOffice : String
+    + thirdPartyValue : ThirdPartyType
+    + email : String
+    + secCheckPerformed : Boolean
+    + secCheckDate : LocalDate
+    + secCheckDeadline : LocalDate
+    + secCheckOutcome : StoplightType
+    + note : String
+}
+
+class WrapperCounterpartDTOResponse {
+    + items : List<CounterpartDetailDTOResponse>
+    + totalPages : Integer
+    + pageSize : Integer
+    + totalItems : Long
+}
+
+' ===== Enums =====
 enum ThirdPartyType {
     RENT
     SALE
@@ -76,14 +106,21 @@ enum ProjectionType {
     FULL
 }
 
-' ==== Relations ====
+' ===== Relations =====
 WrapperCounterpartCreateDTORequest --> CounterpartDTORequest : contains
 WrapperCounterpartUpdateDTORequest --> CounterpartUpdateItemDTORequest : contains
+WrapperCounterpartDTOResponse --> CounterpartDetailDTOResponse : contains
+
 CounterpartDTORequest --> ThirdPartyType
 CounterpartDTORequest --> StoplightType
+
 CounterpartSearchDTORequest --> StoplightType
 CounterpartSearchDTORequest --> ProjectionType
+
 CounterpartUpdateItemDTORequest --> ThirdPartyType
 CounterpartUpdateItemDTORequest --> StoplightType
+
+CounterpartDetailDTOResponse --> ThirdPartyType
+CounterpartDetailDTOResponse --> StoplightType
 
 @enduml

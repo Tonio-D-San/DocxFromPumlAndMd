@@ -1,103 +1,73 @@
 @startuml
-title Counterpart API Routes
+title Counterpart API - Routes & Service Flows
 
 left to right direction
 
 skinparam rectangle {
-    BackgroundColor #E8F8F5
-    BorderColor #1ABC9C
-    Shadowing false
+  BackgroundColor #E8F8F5
+  BorderColor #1ABC9C
+  Shadowing false
 }
 
-' ==== API Endpoints ====
-rectangle "/v1/counterparts" as CounterpartAPI {
-  [GET /{id}] --> [CounterpartService.SEARCH_COUNTERPART_BY_ID]
-  [GET /{id}] --> CounterpartDetailDTOResponse : 200
-  [GET /{id}] --> ErrorMessageDTO : 404/400/500
-
-  [PATCH /{id}] --> [CounterpartService.UPDATE_COUNTERPART_BY_ID]
-  [PATCH /{id}] --> void : 204
-  [PATCH /{id}] --> ErrorMessageDTO : 404/400/500
-
-  [POST] --> [CounterpartService.CREATE_COUNTERPART]
-  [POST] --> CreateMultiDTOResponse : 201
-  [POST] --> ErrorMessageDTO : 400/409/500
-
-  [DELETE /{id}] --> [CounterpartService.DELETE_COUNTERPART_BY_ID]
-  [DELETE /{id}] --> void : 204
-  [DELETE /{id}] --> ErrorMessageDTO : 400/404/409/500
-
-  [POST /search] --> [CounterpartService.SEARCH_COUNTERPART]
-  [POST /search] --> WrapperCounterpartDTOResponse : 200
-  [POST /search] --> ErrorMessageDTO : 500
-
-  [POST /import] --> [CounterpartService.CREATE_COUNTERPART_EXCEL]
-  [POST /import] --> CreateMultiDTOResponse : 201
-  [POST /import] --> ErrorMessageDTO : 400/409/500
+' ==== API Layer ====
+rectangle "Counterpart API (/v1/counterparts)" as CounterpartAPI {
+  [GET /{id}] --> [CounterpartService.SEARCH_BY_ID] : Request
+  [PATCH /{id}] --> [CounterpartService.UPDATE_BY_ID] : Request
+  [POST] --> [CounterpartService.CREATE] : Request
+  [DELETE /{id}] --> [CounterpartService.DELETE_BY_ID] : Request
+  [POST /search] --> [CounterpartService.SEARCH] : Request
+  [POST /import] --> [CounterpartService.CREATE_FROM_EXCEL] : Request
 }
 
 ' ==== Service Layer ====
 rectangle "CounterpartService" as Service {
-    [SEARCH_COUNTERPART]
-    [SEARCH_COUNTERPART_BY_ID]
-    [DELETE_COUNTERPART_BY_ID]
-    [UPDATE_COUNTERPART_BY_ID]
-    [UPDATE_COUNTERPART_MULTI]
-    [CREATE_COUNTERPART]
-    [CREATE_COUNTERPART_MULTI]
-    [CREATE_COUNTERPART_EXCEL]
-    [CREATE_NODE_FOR_COUNTERPART_LIST]
-    [SEARCH_COUNTERPART_FOR_CREATE_NODE]
+  [SEARCH]
+  [SEARCH_BY_ID]
+  [UPDATE_BY_ID]
+  [UPDATE_MULTI]
+  [CREATE]
+  [CREATE_MULTI]
+  [CREATE_FROM_EXCEL]
+  [CREATE_NODE_FOR_LIST]
+  [SEARCH_FOR_CREATE_NODE]
+  [DELETE_BY_ID]
 }
 
-[CounterpartAPI] --> [Service]
+CounterpartAPI --> Service
 
-' ==== Service Route Flows ====
-[SEARCH_COUNTERPART] --> [External] : POST /v1/counterparts/search
-[SEARCH_COUNTERPART_BY_ID] --> [External] : GET /v1/counterparts/{id}
-[DELETE_COUNTERPART_BY_ID] --> [External] : DELETE /v1/counterparts/{id}
-
-[UPDATE_COUNTERPART_BY_ID] --> [UPDATE_COUNTERPART_MULTI]
-[UPDATE_COUNTERPART_MULTI] --> [External] : PATCH /v1/counterparts/multi
-
-[CREATE_COUNTERPART] --> [CREATE_COUNTERPART_MULTI]
-[CREATE_COUNTERPART_MULTI] --> [External] : POST /v1/counterparts/multi
-[CREATE_COUNTERPART] --> [CREATE_NODE_FOR_COUNTERPART_LIST] : async wireTap
-
-[CREATE_COUNTERPART_EXCEL] --> [CREATE_COUNTERPART_MULTI]
-[CREATE_COUNTERPART_EXCEL] --> [CREATE_NODE_FOR_COUNTERPART_LIST] : async wireTap
-
-[CREATE_NODE_FOR_COUNTERPART_LIST] --> [SEARCH_COUNTERPART_FOR_CREATE_NODE]
-[SEARCH_COUNTERPART_FOR_CREATE_NODE] --> [SEARCH_COUNTERPART]
-[CREATE_NODE_FOR_COUNTERPART_LIST] --> [NodeService]
-[CREATE_NODE_FOR_COUNTERPART_LIST] --> [UPDATE_COUNTERPART_MULTI] : update nodeId
-
-' ==== External Interactions ====
-rectangle "External MS Endpoint" as External {
-    [POST /v1/counterparts/search]
-    [GET /v1/counterparts/{id}]
-    [PATCH /v1/counterparts/multi]
-    [POST /v1/counterparts/multi]
-    [DELETE /v1/counterparts/{id}]
+' ==== External Services ====
+rectangle "External MS (meRepurposingReg)" as External {
+  [POST /v1/counterparts/search]
+  [GET /v1/counterparts/{id}]
+  [PATCH /v1/counterparts/multi]
+  [POST /v1/counterparts/multi]
+  [DELETE /v1/counterparts/{id}]
 }
 
-[Service] -left-> [External]
-
-rectangle "Document Node Service" as NodeService {
-    [OBTAIN_NODE]
+rectangle "Document Node MS (meEcDocument)" as NodeService {
+  [POST /v1/documents/nodes]
+  [PUT /v1/documents/nodes/{nodeId}]
 }
 
-[CREATE_NODE_FOR_COUNTERPART_LIST] --> NodeService : create node for each counterpart
+' ==== Internal Flows ====
+[CREATE] --> [CREATE_MULTI]
+[CREATE_MULTI] --> External : POST /v1/counterparts/multi
+[CREATE] --> [CREATE_NODE_FOR_LIST] : async wireTap
+[CREATE_FROM_EXCEL] --> [CREATE_MULTI]
+[CREATE_FROM_EXCEL] --> [CREATE_NODE_FOR_LIST] : async wireTap
+[CREATE_NODE_FOR_LIST] --> [SEARCH_FOR_CREATE_NODE]
+[SEARCH_FOR_CREATE_NODE] --> [SEARCH]
+[SEARCH] --> External : POST /v1/counterparts/search
+[UPDATE_BY_ID] --> [UPDATE_MULTI]
+[UPDATE_MULTI] --> External : PATCH /v1/counterparts/multi
+[DELETE_BY_ID] --> External : DELETE /v1/counterparts/{id}
+[SEARCH_BY_ID] --> External : GET /v1/counterparts/{id}
+[CREATE_NODE_FOR_LIST] --> NodeService : create node per Counterpart
 
-' ==== Notes ====
-note as NoteAPI
-  - Ogni endpoint REST chiama una route di servizio corrispondente
-  - Le route interne orchestrano creazione, ricerca, aggiornamento e cancellazione
-  - Le operazioni CREATE e IMPORT avviano anche un flusso secondario per creare nodi documentali
-  - Le risposte di errore seguono lo schema ErrorMessageDTO
+note bottom of CounterpartAPI
+Ogni endpoint REST invoca una route interna di servizio.
+Le operazioni CREATE e IMPORT avviano un flusso asincrono
+per la creazione dei nodi documentali.
 end note
-
-CounterpartAPI -down-> NoteAPI
-
 
 @enduml

@@ -53,13 +53,13 @@ alt Node da rinominare
     BS -> DMS : RENAME_NODE
     activate DMS
     DMS -> DMS : UPDATE_NODE \nPUT /v1/documents/nodes/{nodeId}\nBody: UpdateNodeDTORequest{newValue, operationType}
-    DMS --> BS : 200 OK
+    DMS --> BS : 2xx Success, 4xx / 5xx Error
     deactivate DMS
 else Node da spostare
     BS -> DMS : MOVE_NODE
     activate DMS
     DMS -> DMS : UPDATE_NODE \nPUT /v1/documents/nodes/{nodeId}\nBody: UpdateNodeDTORequest{newValue, operationType}
-    DMS --> BS : 200 OK
+    DMS --> BS : 2xx Success, 4xx / 5xx Error
     deactivate DMS
 else Nessuna modifica necessaria
     note right of BS
