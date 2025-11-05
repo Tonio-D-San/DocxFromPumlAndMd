@@ -1,0 +1,59 @@
+@startuml
+title Flusso Project API - POST /v1/projects
+
+actor Client as C
+participant "Project BS (borepurposingmgmt)" as BS
+participant "Project MS (meRepurposingReg)" as MS
+participant "DocumentNode MS (meEcDocument)" as DMS
+database "Database" as DB
+
+== Richiesta di creazione ==
+C -> BS : POST /v1/projects\nBody: ProjectCreateDTORequest {name, plantId, country, type, ...}
+activate BS
+
+BS -> MS : POST {meRepurposingRegEndPoint}/v1/projects\nBody: ProjectCreateDTORequest
+activate MS
+
+MS -> DB : Inserisce nuovo record Project
+DB --> MS : Esito creazione OK / errore
+MS --> BS : - JSON response 201 CREATED: IdentifierDTOResponse {id} \n- Error Response 400 / 404 / 500
+deactivate MS
+
+== Inizio flusso asincrono ==
+note right of BS
+Il servizio avvia in parallelo la creazione del "workspace" di progetto,
+che recupera i dettagli e aggiorna il nodeId.
+end note
+
+BS -> BS : Avvia CREATE_PROJECT_WORKSPACE
+activate BS
+
+== Recupero dettagli progetto ==
+BS -> BS : Invoca route interna SEARCH_PROJECT_BY_ID
+
+BS -> MS : GET {meRepurposingRegEndPoint}/v1/projects/{id}
+activate MS
+MS -> DB : Query per ID progetto
+DB --> MS : ProjectDetailDTOResponse {id, nodeId, name, plant ...}
+MS --> BS : JSON response 200 OK: ProjectDetailDTOResponse \n- Error Response 400 / 404 / 500
+deactivate MS
+
+== Recupero nodeId e aggiornamento ==
+BS -> DMS : GET /v1/documents/nodes/{nodeId}
+activate DMS
+DMS --> BS : 200 OK / 404
+deactivate DMS
+
+BS -> BS : Invoca route interna UPDATE_PROJECT_BY_ID_PROXY
+
+== Aggiornamento progetto ==
+BS -> MS : PATCH {meRepurposingRegEndPoint}/v1/projects/{id}\nBody: ProjectUpdateDTORequest { nodeId, name, onHold, ... }
+activate MS
+MS -> DB : Aggiorna record Project con nodeId
+DB --> MS : Esito aggiornamento
+MS --> BS : - 204 NO CONTENT \n- Error Response 400 / 404 / 500
+deactivate MS
+
+BS --> C : - JSON response 201 CREATED: IdentifierDTOResponse {id} \n- Error Response 400 / 404 / 500
+deactivate BS
+@enduml
