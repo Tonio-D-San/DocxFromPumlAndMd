@@ -28,7 +28,7 @@ end note
 BS -> BS : Avvia CREATE_PROJECT_WORKSPACE
 activate BS
 
-== Recupero dettagli progetto ==
+== Recupero dettagli progetto tramite projectId ==
 BS -> BS : Invoca route interna SEARCH_PROJECT_BY_ID
 
 BS -> MS : GET {meRepurposingRegEndPoint}/v1/projects/{id}
@@ -38,22 +38,32 @@ DB --> MS : ProjectDetailDTOResponse {id, nodeId, name, plant ...}
 MS --> BS : JSON response 200 OK: ProjectDetailDTOResponse \n- Error Response 400 / 404 / 500
 deactivate MS
 
-== Recupero nodeId e aggiornamento ==
-BS -> DMS : GET /v1/documents/nodes/{nodeId}
-activate DMS
-DMS --> BS : 200 OK / 404
-deactivate DMS
 
-BS -> BS : Invoca route interna UPDATE_PROJECT_BY_ID_PROXY
+== Recupero nodeId del progetto e aggiornamento ==
+    alt Nodo esistente
+        BS -> DMS : CREATE_BUSINESS_WORKSPACE
+        activate DMS
+        DMS -> DMS : POST {meEcDocument}/v1/business-workspaces
+        DMS --> BS : 2xx Success, 4xx / 5xx Error
+        deactivate DMS
+        BS -> DMS : OBTAIN_NODE
+        activate DMS
+        alt Nodo trovato
+            DMS -> DMS : IdentifierDTOResponse {id} \nImposta NODE_ID_PROPERTY = nodeId
+        else Nodo non trovato o errore
+            DMS -> DMS : Imposta NODE_ID_PROPERTY = "OT_ERROR"
+        end
+        deactivate DMS
+    else Nodo non esistente
+        BS -> BS : Imposta NODE_ID_PROPERTY = "OT_ERROR"
+    end
+    BS -> BS : UPDATE_PROJECT_BY_ID_PROXY
+    BS -> MS : PATCH {meRepurposingRegEndPoint}/v1/projects/{projectId} \nBody: ProjectUpdateDTORequest { nodeId, name, onHold, ... }
 
-== Aggiornamento progetto ==
-BS -> MS : PATCH {meRepurposingRegEndPoint}/v1/projects/{id}\nBody: ProjectUpdateDTORequest { nodeId, name, onHold, ... }
-activate MS
-MS -> DB : Aggiorna record Project con nodeId
-DB --> MS : Esito aggiornamento
-MS --> BS : - 204 NO CONTENT \n- Error Response 400 / 404 / 500
-deactivate MS
-
-BS --> C : - JSON response 201 CREATED: IdentifierDTOResponse {id} \n- Error Response 400 / 404 / 500
+    activate MS
+    MS -> DB : Aggiorna record Project con nodeId
+    DB --> MS : Esito aggiornamento
+    MS --> BS : - 204 NO CONTENT \n- Error Response 400 / 404 / 500
+    deactivate MS
 deactivate BS
 @enduml
