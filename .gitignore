@@ -1,6 +1,12 @@
 .env
 .idea
 prompt.txt
+
+txtToJson/.env
+txtToJson/PDR_DA_ESTRARRE.txt
+txtToJson/richieste_pdr.json
+txtToJson/richieste_pod.json
+
 excels/
 mdAndPumlToDocx/Counterpart/immagini/
 mdAndPumlToDocx/Counterpart/counterpart_output/
@@ -9,7 +15,3 @@ mdAndPumlToDocx/Plant/plant_output/
 mdAndPumlToDocx/ProjectTask/immagini/
 mdAndPumlToDocx/ProjectTask/project_task_output/
 /mdAndPumlToDocx/src/lib/
-txtToJson/.env
-txtToJson/PDR_DA_ESTRARRE.txt
-txtToJson/richieste_pdr.json
-txtToJson/richieste_pod.json
